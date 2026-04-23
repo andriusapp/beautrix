@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Beatrix · Coming Home</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&family=Raleway:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --c1:#6b1a35;
+  --c2:#9b2f52;
+  --c3:#c45878;
+  --c4:#e8829e;
+  --c5:#f5b8c8;
+  --c6:#fde8ef;
+  --gold:#c9893a;
+  --gold2:#e8b870;
+  --violet:#5a2d82;
+  --violet2:#9b6abf;
+  --teal:#1e7068;
+  --teal2:#4fb0a5;
+  --ivory:#fdf0ea;
+  --text1:#3a0e1e;
+  --text2:#7a2a48;
+  --text3:#b07088;
+  --text4:#d4a0b0;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+
+body{
+  min-height:100vh;
+  background:var(--ivory);
+  font-family:'Raleway',sans-serif;
+  font-weight:300;
+  color:var(--text1);
+  overflow-x:hidden;
+}
+
+/* ═══════════════════════════════════════
+   BACKGROUND
+═══════════════════════════════════════ */
+.bg{
+  position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 70% 60% at 0% 0%,   rgba(107,26,53,.28)   0%,transparent 55%),
+    radial-gradient(ellipse 55% 50% at 100% 0%,  rgba(90,45,130,.22)   0%,transparent 50%),
+    radial-gradient(ellipse 60% 55% at 100% 100%,rgba(30,112,104,.2)   0%,transparent 52%),
+    radial-gradient(ellipse 65% 50% at 0% 100%,  rgba(201,137,58,.22)  0%,transparent 52%),
+    radial-gradient(ellipse 80% 80% at 50% 50%,  rgba(232,130,158,.08) 0%,transparent 60%),
+    #fdf0ea;
+}
+.bg-noise{
+  position:fixed;inset:0;z-index:1;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  background-size:200px 200px;
+  pointer-events:none;opacity:.6;
+}
+
+/* ═══════════════════════════════════════
+   PETALS
+═══════════════════════════════════════ */
+canvas{position:fixed;inset:0;z-index:2;pointer-events:none}
+
+/* ═══════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════ */
+.page{
+  position:relative;z-index:3;
+  min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  padding:4rem 1.5rem;
+}
+
+/* ═══════════════════════════════════════
+   CARD
+═══════════════════════════════════════ */
+.card{
+  width:100%;max-width:620px;
+  position:relative;
+  animation:float 8s ease-in-out infinite;
+}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+/* Outer glow ring */
+.card-glow{
+  position:absolute;inset:-20px;
+  border-radius:30px;
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(196,88,120,.18), transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(30,112,104,.15), transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(90,45,130,.15), transparent 50%),
+    radial-gradient(ellipse at 20% 80%, rgba(201,137,58,.15), transparent 50%);
+  filter:blur(20px);
+  z-index:-1;
+}
+
+.card-inner{
+  background:rgba(253,240,234,.92);
+  backdrop-filter:blur(30px) saturate(1.4);
+  border-radius:20px;
+  border:1px solid rgba(255,255,255,.7);
+  padding:3.5rem 3.5rem 3rem;
+  position:relative;
+  overflow:hidden;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.9) inset,
+    0 -1px 0 rgba(107,26,53,.05) inset,
+    0 20px 60px rgba(107,26,53,.1),
+    0 4px 20px rgba(107,26,53,.06);
+}
+
+/* Iridescent top sheen */
+.card-inner::before{
+  content:'';position:absolute;
+  top:0;left:0;right:0;height:200px;
+  background:linear-gradient(180deg,
+    rgba(255,255,255,.5) 0%,
+    rgba(255,255,255,.1) 40%,
+    transparent 100%);
+  border-radius:20px 20px 0 0;
+  pointer-events:none;
+}
+
+/* Subtle texture overlay */
+.card-inner::after{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 60% 40% at 90% 10%, rgba(90,45,130,.06), transparent),
+    radial-gradient(ellipse 50% 50% at 10% 90%, rgba(30,112,104,.05), transparent);
+  pointer-events:none;border-radius:20px;
+}
+
+/* ═══════════════════════════════════════
+   DECORATIVE LINES
+═══════════════════════════════════════ */
+.deco-top{
+  position:absolute;top:20px;left:20px;right:20px;
+  height:1px;
+  background:linear-gradient(90deg,
+    transparent,
+    rgba(201,137,58,.4),
+    rgba(196,88,120,.5),
+    rgba(90,45,130,.4),
+    rgba(30,112,104,.4),
+    transparent);
+  border-radius:1px;
+}
+.deco-bot{
+  position:absolute;bottom:20px;left:20px;right:20px;
+  height:1px;
+  background:linear-gradient(90deg,
+    transparent,
+    rgba(30,112,104,.3),
+    rgba(201,137,58,.4),
+    rgba(196,88,120,.4),
+    transparent);
+}
+
+/* ═══════════════════════════════════════
+   BADGE
+═══════════════════════════════════════ */
+.badge{
+  display:inline-flex;align-items:center;gap:8px;
+  margin-bottom:2.2rem;
+  padding:5px 14px 5px 10px;
+  background:rgba(255,255,255,.5);
+  border:1px solid rgba(196,88,120,.2);
+  border-radius:50px;
+}
+.badge-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:linear-gradient(135deg,var(--c3),var(--gold));
+  box-shadow:0 0 6px rgba(196,88,120,.5);
+  animation:pulse 1.8s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.7);opacity:.4}}
+.badge-text{
+  font-size:9px;font-weight:500;
+  letter-spacing:3px;text-transform:uppercase;
+  color:var(--text3);
+}
+
+/* ═══════════════════════════════════════
+   HEADLINE
+═══════════════════════════════════════ */
+.headline{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(36px,6.5vw,58px);
+  font-weight:400;font-style:italic;
+  line-height:1.1;letter-spacing:-.5px;
+  margin-bottom:.6rem;
+  position:relative;z-index:1;
+}
+.headline-line1{
+  background:linear-gradient(120deg,var(--c1) 0%,var(--c2) 50%,var(--violet) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  display:block;
+}
+.headline-line2{
+  background:linear-gradient(120deg,var(--gold) 0%,var(--c3) 40%,var(--teal) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  display:block;
+  font-style:normal;
+  font-weight:500;
+  font-size:clamp(40px,7vw,64px);
+}
+
+.eyeline{
+  font-size:11px;font-weight:400;
+  letter-spacing:3px;text-transform:uppercase;
+  color:var(--text3);margin-bottom:2.5rem;
+  display:flex;align-items:center;gap:10px;
+}
+.eyeline::before,.eyeline::after{
+  content:'';flex:0 0 30px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(176,112,136,.4));
+}
+.eyeline::after{background:linear-gradient(90deg,rgba(176,112,136,.4),transparent)}
+
+/* ═══════════════════════════════════════
+   ROUTE
+═══════════════════════════════════════ */
+.route{
+  display:flex;align-items:center;
+  margin-bottom:2.2rem;
+  padding:1.4rem 1.6rem;
+  background:linear-gradient(135deg,
+    rgba(255,255,255,.6),
+    rgba(253,240,234,.4));
+  border:1px solid rgba(255,255,255,.8);
+  border-radius:14px;
+  box-shadow:0 2px 20px rgba(107,26,53,.06),0 1px 0 rgba(255,255,255,.9) inset;
+  position:relative;overflow:hidden;
+}
+.route-glow{
+  position:absolute;inset:0;
+  background:linear-gradient(90deg,
+    rgba(201,137,58,.05),
+    rgba(196,88,120,.06),
+    rgba(90,45,130,.05),
+    rgba(30,112,104,.05));
+  animation:routeFlow 5s ease-in-out infinite alternate;
+}
+@keyframes routeFlow{from{opacity:.5}to{opacity:1}}
+
+.airport{display:flex;flex-direction:column;align-items:center;gap:4px;position:relative;z-index:1}
+.iata{
+  font-family:'Playfair Display',serif;
+  font-size:30px;font-weight:500;letter-spacing:3px;
+}
+.iata-jfk{
+  background:linear-gradient(135deg,var(--c1),var(--gold));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.iata-lhr{
+  background:linear-gradient(135deg,var(--teal),var(--violet));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.airport-city{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);font-weight:400}
+.airport-name{font-size:9px;color:var(--text4);letter-spacing:.5px;margin-top:1px}
+
+.flight-path{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:0 16px;position:relative;z-index:1}
+.path-arc{
+  width:100%;height:24px;
+  position:relative;
+}
+.path-arc svg{width:100%;height:100%;overflow:visible}
+.path-plane{
+  position:absolute;
+  top:0;font-size:14px;
+  filter:drop-shadow(0 2px 6px rgba(196,88,120,.5));
+  animation:soar 5s ease-in-out infinite;
+}
+@keyframes soar{
+  0%{left:2%;top:12px;opacity:.5}
+  30%{top:2px;opacity:1}
+  70%{top:2px;opacity:1}
+  100%{left:84%;top:12px;opacity:.5}
+}
+.path-dist{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text4)}
+
+/* ═══════════════════════════════════════
+   UNITS
+═══════════════════════════════════════ */
+.units{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:12px;margin-bottom:1.8rem;
+}
+.unit{text-align:center}
+.unit-box{
+  padding:1.6rem .5rem 1.2rem;
+  border-radius:14px;
+  margin-bottom:.6rem;
+  position:relative;overflow:hidden;
+  border:1px solid rgba(255,255,255,.8);
+  box-shadow:0 2px 16px rgba(0,0,0,.05),0 1px 0 rgba(255,255,255,.9) inset;
+  transition:transform .25s ease,box-shadow .25s ease;
+  cursor:default;
+}
+.unit-box:hover{transform:translateY(-5px) scale(1.03);box-shadow:0 8px 30px rgba(0,0,0,.1),0 1px 0 rgba(255,255,255,.9) inset}
+
+/* Per-unit backgrounds */
+.u1 .unit-box{background:linear-gradient(160deg,rgba(107,26,53,.12),rgba(196,88,120,.06))}
+.u2 .unit-box{background:linear-gradient(160deg,rgba(90,45,130,.12),rgba(155,106,191,.06))}
+.u3 .unit-box{background:linear-gradient(160deg,rgba(201,137,58,.13),rgba(232,184,112,.06))}
+.u4 .unit-box{background:linear-gradient(160deg,rgba(30,112,104,.12),rgba(79,176,165,.06))}
+
+/* Coloured top bar */
+.unit-box::before{
+  content:'';position:absolute;top:0;left:10%;right:10%;height:2px;border-radius:0 0 2px 2px;
+}
+.u1 .unit-box::before{background:linear-gradient(90deg,var(--c1),var(--c3),var(--c4))}
+.u2 .unit-box::before{background:linear-gradient(90deg,var(--violet),var(--violet2))}
+.u3 .unit-box::before{background:linear-gradient(90deg,var(--gold),var(--gold2))}
+.u4 .unit-box::before{background:linear-gradient(90deg,var(--teal),var(--teal2))}
+
+/* Inner glow */
+.unit-box::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:50%;
+  opacity:.12;
+}
+.u1 .unit-box::after{background:radial-gradient(ellipse at 50% 100%,var(--c3),transparent)}
+.u2 .unit-box::after{background:radial-gradient(ellipse at 50% 100%,var(--violet2),transparent)}
+.u3 .unit-box::after{background:radial-gradient(ellipse at 50% 100%,var(--gold2),transparent)}
+.u4 .unit-box::after{background:radial-gradient(ellipse at 50% 100%,var(--teal2),transparent)}
+
+.num{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(40px,7vw,56px);
+  font-weight:400;line-height:1;
+  display:block;letter-spacing:-1px;
+  position:relative;z-index:1;
+}
+.u1 .num{background:linear-gradient(160deg,var(--c1) 20%,var(--c3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.u2 .num{background:linear-gradient(160deg,var(--violet) 20%,var(--violet2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.u3 .num{background:linear-gradient(160deg,var(--gold) 20%,var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.u4 .num{background:linear-gradient(160deg,var(--teal) 20%,var(--teal2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+.num.pop{animation:pop .22s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.14)}100%{transform:scale(1)}}
+
+.unit-lbl{font-size:9px;font-weight:500;letter-spacing:2.5px;text-transform:uppercase;color:var(--text3)}
+
+/* ═══════════════════════════════════════
+   TZ ROW
+═══════════════════════════════════════ */
+.tz-row{display:flex;gap:12px;margin-bottom:1.6rem}
+.tz-pill{
+  flex:1;padding:1rem 1.1rem;border-radius:12px;
+  display:flex;flex-direction:column;gap:5px;
+  border:1px solid rgba(255,255,255,.7);
+  box-shadow:0 2px 14px rgba(0,0,0,.05),0 1px 0 rgba(255,255,255,.8) inset;
+}
+.tz-pill.tz-ny{background:linear-gradient(135deg,rgba(107,26,53,.09),rgba(201,137,58,.05))}
+.tz-pill.tz-lh{background:linear-gradient(135deg,rgba(90,45,130,.09),rgba(30,112,104,.06))}
+.tz-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);font-weight:400}
+.tz-time{
+  font-family:'Playfair Display',serif;
+  font-size:24px;font-weight:400;letter-spacing:.5px;
+}
+.tz-ny .tz-time{background:linear-gradient(135deg,var(--c2),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.tz-lh .tz-time{background:linear-gradient(135deg,var(--violet),var(--teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+/* ═══════════════════════════════════════
+   STATUS
+═══════════════════════════════════════ */
+.status-wrap{
+  text-align:center;margin-bottom:1.8rem;
+  padding:1.1rem 1.4rem;
+  background:linear-gradient(135deg,rgba(255,255,255,.5),rgba(253,240,234,.3));
+  border:1px solid rgba(255,255,255,.7);
+  border-radius:12px;
+  box-shadow:0 1px 0 rgba(255,255,255,.8) inset;
+}
+.status{
+  font-family:'Playfair Display',serif;
+  font-style:italic;font-size:17px;
+  letter-spacing:.3px;line-height:1.6;
+  background:linear-gradient(90deg,var(--c1),var(--violet),var(--teal),var(--gold),var(--c3));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  background-size:300%;
+  animation:flow 7s ease-in-out infinite alternate;
+}
+@keyframes flow{from{background-position:0%}to{background-position:100%}}
+
+/* ═══════════════════════════════════════
+   DIVIDER
+═══════════════════════════════════════ */
+.divider{display:flex;align-items:center;gap:12px;margin-bottom:1.2rem}
+.div-line{
+  flex:1;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(201,137,58,.35),rgba(196,88,120,.3),rgba(90,45,130,.3),transparent);
+}
+.div-gem{
+  width:8px;height:8px;
+  background:linear-gradient(135deg,var(--gold),var(--c3));
+  transform:rotate(45deg);
+  border-radius:1px;
+  box-shadow:0 0 8px rgba(201,137,58,.4);
+}
+
+/* ═══════════════════════════════════════
+   WEATHER
+═══════════════════════════════════════ */
+.wx-label{
+  font-size:9px;font-weight:500;letter-spacing:3px;
+  text-transform:uppercase;color:var(--text4);
+  text-align:center;margin-bottom:.8rem;
+}
+.weather-row{display:flex;gap:12px}
+.wx-card{
+  flex:1;padding:1.2rem 1.1rem 1rem;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.7);
+  box-shadow:0 2px 16px rgba(0,0,0,.05),0 1px 0 rgba(255,255,255,.8) inset;
+  position:relative;overflow:hidden;
+}
+.wx-card.wx-jfk{background:linear-gradient(145deg,rgba(201,137,58,.1),rgba(107,26,53,.06),rgba(255,255,255,.3))}
+.wx-card.wx-lhr{background:linear-gradient(145deg,rgba(30,112,104,.1),rgba(90,45,130,.06),rgba(255,255,255,.3))}
+.wx-card::before{
+  content:'';position:absolute;top:0;left:10%;right:10%;height:2px;border-radius:0 0 2px 2px;
+}
+.wx-jfk::before{background:linear-gradient(90deg,var(--gold),var(--c3))}
+.wx-lhr::before{background:linear-gradient(90deg,var(--teal),var(--violet))}
+
+.wx-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.7rem}
+.wx-airport{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);font-weight:500}
+.wx-icon{font-size:24px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.12))}
+.wx-temp{
+  font-family:'Playfair Display',serif;
+  font-size:34px;font-weight:400;line-height:1;margin-bottom:3px;
+}
+.wx-jfk .wx-temp{background:linear-gradient(135deg,var(--gold),var(--c2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.wx-lhr .wx-temp{background:linear-gradient(135deg,var(--teal),var(--violet2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.wx-desc{font-size:11px;color:var(--text3);margin-bottom:.7rem;letter-spacing:.5px;font-weight:400}
+.wx-meta{display:flex;flex-direction:column;gap:3px}
+.wx-meta span{font-size:10px;color:var(--text4);font-weight:300}
+.wx-meta b{color:var(--text2);font-weight:400}
+.wx-loading{font-size:12px;color:var(--c5);font-style:italic;font-family:'Playfair Display',serif}
+
+/* ═══════════════════════════════════════
+   ARRIVED
+═══════════════════════════════════════ */
+.arrived{
+  display:none;flex-direction:column;
+  align-items:center;gap:1.2rem;padding:2rem 0;text-align:center;
+}
+.arrived-title{
+  font-family:'Playfair Display',serif;
+  font-size:52px;font-weight:400;font-style:italic;
+  background:linear-gradient(135deg,var(--c1),var(--violet),var(--teal));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  line-height:1.15;
+}
+.arrived-sub{font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--text3)}
+
+/* ═══════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════ */
+@media(max-width:520px){
+  .card-inner{padding:2.5rem 1.6rem 2rem}
+  .num{font-size:32px}
+  .units{gap:8px}
+  .weather-row{flex-direction:column}
+  .iata{font-size:22px}
+}
+</style>
+</head>
+<body>
+
+<div class="bg"></div>
+<div class="bg-noise"></div>
+<canvas id="c"></canvas>
+
+<div class="page">
+  <div class="card">
+    <div class="card-glow"></div>
+    <div class="card-inner">
+      <div class="deco-top"></div>
+      <div class="deco-bot"></div>
+
+      <!-- Badge -->
+      <div class="badge">
+        <span class="badge-dot"></span>
+        <span class="badge-text">Live countdown</span>
+      </div>
+
+      <!-- Headline -->
+      <h1 class="headline">
+        <span class="headline-line1">Beatrix is</span>
+        <span class="headline-line2">coming home</span>
+      </h1>
+      <div class="eyeline">24 June 2026 &nbsp;·&nbsp; 6:45 AM &nbsp;·&nbsp; London Heathrow</div>
+
+      <!-- Route -->
+      <div class="route">
+        <div class="route-glow"></div>
+        <div class="airport">
+          <span class="iata iata-jfk">JFK</span>
+          <span class="airport-city">New York</span>
+          <span class="airport-name">John F. Kennedy</span>
+        </div>
+        <div class="flight-path">
+          <div class="path-arc">
+            <svg viewBox="0 0 100 24" preserveAspectRatio="none">
+              <path d="M0,20 Q50,2 100,20" fill="none" stroke="url(#pg)" stroke-width=".8" stroke-dasharray="3,2" opacity=".6"/>
+              <defs>
+                <linearGradient id="pg" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#c9893a"/>
+                  <stop offset="40%" stop-color="#c45878"/>
+                  <stop offset="70%" stop-color="#5a2d82"/>
+                  <stop offset="100%" stop-color="#1e7068"/>
+                </linearGradient>
+              </defs>
+            </svg>
+            <span class="path-plane">✈</span>
+          </div>
+          <div class="path-dist">5,570 km</div>
+        </div>
+        <div class="airport">
+          <span class="iata iata-lhr">LHR</span>
+          <span class="airport-city">London</span>
+          <span class="airport-name">Heathrow</span>
+        </div>
+      </div>
+
+      <!-- Countdown -->
+      <div id="counter">
+        <div class="units">
+          <div class="unit u1">
+            <div class="unit-box"><span class="num" id="dy">00</span></div>
+            <span class="unit-lbl">Days</span>
+          </div>
+          <div class="unit u2">
+            <div class="unit-box"><span class="num" id="hr">00</span></div>
+            <span class="unit-lbl">Hours</span>
+          </div>
+          <div class="unit u3">
+            <div class="unit-box"><span class="num" id="mn">00</span></div>
+            <span class="unit-lbl">Minutes</span>
+          </div>
+          <div class="unit u4">
+            <div class="unit-box"><span class="num" id="sc">00</span></div>
+            <span class="unit-lbl">Seconds</span>
+          </div>
+        </div>
+
+        <!-- Timezone -->
+        <div class="tz-row">
+          <div class="tz-pill tz-ny">
+            <span class="tz-label">Her time · New York</span>
+            <span class="tz-time" id="nyTime">--:--</span>
+          </div>
+          <div class="tz-pill tz-lh">
+            <span class="tz-label">Your time · London</span>
+            <span class="tz-time" id="lhTime">--:--</span>
+          </div>
+        </div>
+
+        <!-- Status -->
+        <div class="status-wrap">
+          <div class="status" id="statusText">Calculating the wait…</div>
+        </div>
+
+        <!-- Weather -->
+        <div class="divider">
+          <div class="div-line"></div>
+          <div class="div-gem"></div>
+          <div class="div-line"></div>
+        </div>
+        <p class="wx-label">Current weather</p>
+        <div class="weather-row">
+          <div class="wx-card wx-jfk">
+            <div class="wx-head">
+              <span class="wx-airport">JFK · New York</span>
+              <span class="wx-icon" id="jfk-icon"></span>
+            </div>
+            <div class="wx-temp" id="jfk-temp"><span class="wx-loading">Loading…</span></div>
+            <div class="wx-desc" id="jfk-desc"></div>
+            <div class="wx-meta">
+              <span>Humidity <b id="jfk-hum">--</b></span>
+              <span>Wind <b id="jfk-wind">--</b></span>
+            </div>
+          </div>
+          <div class="wx-card wx-lhr">
+            <div class="wx-head">
+              <span class="wx-airport">LHR · London</span>
+              <span class="wx-icon" id="lhr-icon"></span>
+            </div>
+            <div class="wx-temp" id="lhr-temp"><span class="wx-loading">Loading…</span></div>
+            <div class="wx-desc" id="lhr-desc"></div>
+            <div class="wx-meta">
+              <span>Humidity <b id="lhr-hum">--</b></span>
+              <span>Wind <b id="lhr-wind">--</b></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Arrived -->
+      <div class="arrived" id="arrived">
+        <div class="arrived-title">She's here</div>
+        <div class="arrived-sub">Welcome home, Beatrix</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── PETALS ─────────────────────────────────────────────── */
+(()=>{
+  const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+  const resize=()=>{cv.width=innerWidth;cv.height=innerHeight};
+  resize();addEventListener('resize',resize);
+
+  const PAL=[
+    '#e8829e','#f5b8c8','#c45878','#9b2f52','#6b1a35',
+    '#c9893a','#e8b870','#f5d9a8',
+    '#9b6abf','#5a2d82',
+    '#4fb0a5','#1e7068',
+    '#fce8ef','#f5dde5',
+  ];
+
+  function mkPetal(rnd){
+    const s=5+Math.random()*12;
+    const type=Math.random()<.55?'petal':Math.random()<.5?'heart':'circle';
+    return{
+      x:Math.random()*innerWidth,
+      y:rnd?Math.random()*innerHeight:-20,
+      s,type,
+      r:Math.random()*Math.PI*2,
+      dr:(Math.random()-.5)*.025,
+      vx:(Math.random()-.5)*.65,
+      vy:.3+Math.random()*.85,
+      col:PAL[Math.floor(Math.random()*PAL.length)],
+      op:.2+Math.random()*.5,
+      sw:Math.random()*Math.PI*2,
+      swS:.008+Math.random()*.018,
+    };
+  }
+
+  const N=60;
+  const pts=Array.from({length:N},()=>mkPetal(true));
+
+  function drawPetal(p){
+    ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r);
+    ctx.globalAlpha=p.op;ctx.fillStyle=p.col;
+    if(p.type==='petal'){
+      ctx.beginPath();
+      ctx.ellipse(0,0,p.s*.35,p.s*.9,0,0,Math.PI*2);
+      ctx.fill();
+    } else if(p.type==='heart'){
+      const s=p.s*.5;
+      ctx.beginPath();
+      ctx.moveTo(0,s*.5);
+      ctx.bezierCurveTo(s*.9,-s*.1,s*1.2,-s*.8,0,-s*.5);
+      ctx.bezierCurveTo(-s*1.2,-s*.8,-s*.9,-s*.1,0,s*.5);
+      ctx.fill();
+    } else {
+      ctx.beginPath();ctx.arc(0,0,p.s*.3,0,Math.PI*2);ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function frame(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    pts.forEach(p=>{
+      p.sw+=p.swS;p.x+=p.vx+Math.sin(p.sw)*.55;p.y+=p.vy;p.r+=p.dr;
+      if(p.y>innerHeight+20)Object.assign(p,mkPetal(false));
+      drawPetal(p);
+    });
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+/* ── COUNTDOWN ──────────────────────────────────────────── */
+const TARGET=new Date('2026-06-24T06:45:00+01:00');
+const pad=n=>String(Math.floor(n)).padStart(2,'0');
+let prevSec=-1;
+
+const fmtTZ=tz=>new Date().toLocaleTimeString('en-GB',{timeZone:tz,hour:'2-digit',minute:'2-digit',hour12:true});
+
+function tick(){
+  document.getElementById('nyTime').textContent=fmtTZ('America/New_York');
+  document.getElementById('lhTime').textContent=fmtTZ('Europe/London');
+  const ms=TARGET-Date.now();
+  if(ms<=0){
+    document.getElementById('counter').style.display='none';
+    document.getElementById('arrived').style.display='flex';
+    return;
+  }
+  const ts=Math.floor(ms/1000);
+  const secs=ts%60,mins=Math.floor(ts/60)%60,hrs=Math.floor(ts/3600)%24,days=Math.floor(ms/86400000);
+  document.getElementById('dy').textContent=pad(days);
+  document.getElementById('hr').textContent=pad(hrs);
+  document.getElementById('mn').textContent=pad(mins);
+  document.getElementById('sc').textContent=pad(secs);
+  const sc=document.getElementById('sc');
+  if(secs!==prevSec){sc.classList.remove('pop');void sc.offsetWidth;sc.classList.add('pop');prevSec=secs;}
+  const st=document.getElementById('statusText');
+  if(days>1)        st.textContent=`${days} days and ${hrs} hour${hrs!==1?'s':''} until Beatrix is back.`;
+  else if(days===1) st.textContent=`One more day — ${hrs} hour${hrs!==1?'s':''} to go.`;
+  else if(hrs>0)    st.textContent=`${hrs} hour${hrs!==1?'s':''} left. Beatrix is almost home.`;
+  else if(mins>0)   st.textContent=`${mins} minute${mins!==1?'s':''} away. She's nearly there.`;
+  else              st.textContent=`Any moment now.`;
+}
+tick();setInterval(tick,1000);
+
+/* ── WEATHER ─────────────────────────────────────────────── */
+const WD={0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',45:'Fog',48:'Freezing fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',71:'Light snow',73:'Snow',75:'Heavy snow',77:'Snow grains',80:'Light showers',81:'Showers',82:'Heavy showers',85:'Snow showers',86:'Heavy snow showers',95:'Thunderstorm',96:'Thunderstorm & hail',99:'Thunderstorm & hail'};
+const WI={0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',71:'🌨️',73:'❄️',75:'❄️',77:'❄️',80:'🌦️',81:'🌧️',82:'⛈️',85:'🌨️',86:'🌨️',95:'⛈️',96:'⛈️',99:'⛈️'};
+
+async function wx(lat,lon,p){
+  try{
+    const d=await(await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&wind_speed_unit=mph&temperature_unit=celsius&timezone=auto`)).json();
+    const c=d.current,code=c.weather_code;
+    document.getElementById(`${p}-temp`).textContent=`${Math.round(c.temperature_2m)}°C`;
+    document.getElementById(`${p}-desc`).textContent=WD[code]||'Unknown';
+    document.getElementById(`${p}-icon`).textContent=WI[code]||'🌡️';
+    document.getElementById(`${p}-hum`).textContent=`${c.relative_humidity_2m}%`;
+    document.getElementById(`${p}-wind`).textContent=`${Math.round(c.wind_speed_10m)} mph`;
+  }catch{document.getElementById(`${p}-temp`).textContent='—';}
+}
+wx(51.477,-0.461,'lhr');
+wx(40.641,-73.778,'jfk');
+setInterval(()=>{wx(51.477,-0.461,'lhr');wx(40.641,-73.778,'jfk')},600000);
+</script>
+</body>
+</html>

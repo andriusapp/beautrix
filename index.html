@@ -415,6 +415,54 @@ canvas{position:fixed;inset:0;z-index:2;pointer-events:none}
 .wx-loading{font-size:11px;color:var(--c5);font-style:italic;font-family:'Playfair Display',serif}
 
 /* ═══════════════════════════════════════
+   MUTE BUTTON
+═══════════════════════════════════════ */
+.mute-btn{
+  position:fixed;
+  bottom:max(env(safe-area-inset-bottom,0px) + 18px, 22px);
+  right:max(env(safe-area-inset-right,0px) + 16px, 16px);
+  z-index:10;
+  width:44px;height:44px;
+  border-radius:50%;
+  border:1px solid rgba(196,88,120,.25);
+  background:rgba(253,240,234,.88);
+  backdrop-filter:blur(14px);
+  box-shadow:0 4px 18px rgba(107,26,53,.14),0 1px 0 rgba(255,255,255,.8) inset;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;
+  transition:transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+  opacity:.75;
+  /* start hidden until user interacts */
+  pointer-events:all;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
+}
+.mute-btn:hover{opacity:1;transform:scale(1.08)}
+.mute-btn:active{transform:scale(.93)}
+.mute-btn.muted{opacity:.45}
+
+/* Sound unlock prompt */
+.sound-prompt{
+  position:fixed;
+  bottom:max(env(safe-area-inset-bottom,0px) + 72px, 76px);
+  right:max(env(safe-area-inset-right,0px) + 10px, 10px);
+  z-index:10;
+  padding:7px 12px;
+  border-radius:10px;
+  background:rgba(107,26,53,.82);
+  backdrop-filter:blur(10px);
+  color:rgba(253,232,239,.9);
+  font-size:10px;letter-spacing:1.5px;text-transform:uppercase;font-weight:500;
+  pointer-events:none;
+  opacity:0;
+  transform:translateY(6px);
+  transition:opacity .4s ease, transform .4s ease;
+  white-space:nowrap;
+}
+.sound-prompt.show{opacity:1;transform:translateY(0)}
+
+/* ═══════════════════════════════════════
    ARRIVED
 ═══════════════════════════════════════ */
 .arrived{
@@ -475,6 +523,10 @@ canvas{position:fixed;inset:0;z-index:2;pointer-events:none}
 <div class="bg"></div>
 <div class="bg-noise"></div>
 <canvas id="c"></canvas>
+
+<!-- Sound controls -->
+<button class="mute-btn" id="muteBtn" aria-label="Toggle sound" title="Toggle sound">🔔</button>
+<div class="sound-prompt" id="soundPrompt">Tap to enable sound</div>
 
 <div class="page">
   <div class="card">
@@ -702,6 +754,7 @@ function tick(){
   if(ms<=0){
     document.getElementById('counter').style.display='none';
     document.getElementById('arrived').style.display='flex';
+    if(window.playArrivalFanfare) window.playArrivalFanfare();
     return;
   }
   const ts=Math.floor(ms/1000);
@@ -719,7 +772,7 @@ function tick(){
   else if(mins>0)   st.textContent=`${mins} minute${mins!==1?'s':''} away. She's nearly there.`;
   else              st.textContent=`Any moment now.`;
 }
-tick();setInterval(tick,1000);
+tick();window._tickInterval=setInterval(tick,1000);
 
 /* ── WEATHER ─────────────────────────────────────────────── */
 const WD={0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',45:'Fog',48:'Freezing fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',71:'Light snow',73:'Snow',75:'Heavy snow',77:'Snow grains',80:'Light showers',81:'Showers',82:'Heavy showers',85:'Snow showers',86:'Heavy snow showers',95:'Thunderstorm',96:'Thunderstorm & hail',99:'Thunderstorm & hail'};
@@ -739,6 +792,204 @@ async function wx(lat,lon,p){
 wx(51.477,-0.461,'lhr');
 wx(40.641,-73.778,'jfk');
 setInterval(()=>{wx(51.477,-0.461,'lhr');wx(40.641,-73.778,'jfk')},600000);
+
+/* ── SOUND ENGINE ────────────────────────────────────────── */
+(()=>{
+  let ctx=null, muted=false, unlocked=false;
+  let prevMin=-1, prevDay=-1;
+
+  const btn=document.getElementById('muteBtn');
+  const prompt=document.getElementById('soundPrompt');
+
+  // Show the prompt after 1.5s to invite the user to tap
+  setTimeout(()=>{
+    prompt.classList.add('show');
+    setTimeout(()=>prompt.classList.remove('show'),3200);
+  },1500);
+
+  function getCtx(){
+    if(!ctx) ctx=new(window.AudioContext||window.webkitAudioContext)();
+    if(ctx.state==='suspended') ctx.resume();
+    return ctx;
+  }
+
+  function unlock(){
+    if(unlocked) return;
+    getCtx();
+    unlocked=true;
+    prompt.classList.remove('show');
+  }
+
+  // ── Helpers ───────────────────────────────────────────
+  function gain(ac, val, t){
+    const g=ac.createGain(); g.gain.setValueAtTime(val,t); return g;
+  }
+
+  function osc(ac, type, freq, startT, dur, vol=0.08, fadeIn=0.004, fadeOut=0.12){
+    const o=ac.createOscillator();
+    const g=ac.createGain();
+    o.type=type; o.frequency.setValueAtTime(freq,startT);
+    g.gain.setValueAtTime(0,startT);
+    g.gain.linearRampToValueAtTime(vol,startT+fadeIn);
+    g.gain.setValueAtTime(vol,startT+dur-fadeOut);
+    g.gain.exponentialRampToValueAtTime(0.0001,startT+dur);
+    o.connect(g); g.connect(ac.destination);
+    o.start(startT); o.stop(startT+dur);
+  }
+
+  // Gentle reverb convolver for special sounds
+  function makeReverb(ac){
+    const len=ac.sampleRate*1.4, buf=ac.createBuffer(2,len,ac.sampleRate);
+    for(let c=0;c<2;c++){
+      const d=buf.getChannelData(c);
+      for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.2);
+    }
+    const conv=ac.createConvolver(); conv.buffer=buf; return conv;
+  }
+
+  // ── Sound: soft tick (every second) ──────────────────
+  function playTick(){
+    if(muted||!unlocked) return;
+    const ac=getCtx(), t=ac.currentTime;
+    // Very quiet click: short noise burst
+    const buf=ac.createBuffer(1,256,ac.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<256;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/256,4);
+    const src=ac.createBufferSource();
+    src.buffer=buf;
+    const g=ac.createGain(); g.gain.setValueAtTime(0.055,t);
+    const filt=ac.createBiquadFilter(); filt.type='bandpass'; filt.frequency.value=2200; filt.Q.value=0.6;
+    src.connect(filt); filt.connect(g); g.connect(ac.destination);
+    src.start(t);
+  }
+
+  // ── Sound: minute chime (every 60s rollover) ─────────
+  function playMinuteChime(){
+    if(muted||!unlocked) return;
+    const ac=getCtx(), t=ac.currentTime;
+    const rev=makeReverb(ac);
+    const mix=ac.createGain(); mix.gain.value=0.18; mix.connect(ac.destination);
+    rev.connect(mix);
+    // Two-note chime: perfect fifth
+    [[523.25,0],[783.99,0.09]].forEach(([freq,delay])=>{
+      osc(ac,'sine',freq,t+delay,0.7,0.09,0.005,0.5);
+      const o2=ac.createOscillator(),g2=ac.createGain();
+      o2.type='triangle'; o2.frequency.value=freq*2;
+      g2.gain.setValueAtTime(0,t+delay);
+      g2.gain.linearRampToValueAtTime(0.03,t+delay+0.005);
+      g2.gain.exponentialRampToValueAtTime(0.0001,t+delay+0.6);
+      o2.connect(g2); g2.connect(rev);
+      o2.start(t+delay); o2.stop(t+delay+0.65);
+    });
+  }
+
+  // ── Sound: hour bell (every hour rollover) ────────────
+  function playHourBell(){
+    if(muted||!unlocked) return;
+    const ac=getCtx(), t=ac.currentTime;
+    const rev=makeReverb(ac);
+    const mix=ac.createGain(); mix.gain.value=0.22; mix.connect(ac.destination);
+    rev.connect(mix);
+    // Bell-ish: detuned pair + high partial
+    [[349.23,0],[440,0.02],[698.46,0.04]].forEach(([freq,delay])=>{
+      osc(ac,'sine',freq,t+delay,1.2,0.1,0.004,0.9);
+      const o2=ac.createOscillator(),g2=ac.createGain();
+      o2.type='sine'; o2.frequency.value=freq*2.756; // inharmonic partial = bell
+      g2.gain.setValueAtTime(0,t+delay);
+      g2.gain.linearRampToValueAtTime(0.04,t+delay+0.004);
+      g2.gain.exponentialRampToValueAtTime(0.0001,t+delay+0.8);
+      o2.connect(g2); g2.connect(rev);
+      o2.start(t+delay); o2.stop(t+delay+0.85);
+    });
+  }
+
+  // ── Sound: arrival fanfare ────────────────────────────
+  window.playArrivalFanfare=function(){
+    if(muted||!unlocked) return;
+    const ac=getCtx(), t=ac.currentTime;
+    const rev=makeReverb(ac);
+    const mix=ac.createGain(); mix.gain.value=0.28; mix.connect(ac.destination);
+    rev.connect(mix);
+    // Rising arpeggio: C4 E4 G4 C5 E5
+    const notes=[261.63,329.63,392,523.25,659.25];
+    notes.forEach((freq,i)=>{
+      const delay=i*0.13;
+      osc(ac,'sine',freq,t+delay,1.4-i*.05,0.12,0.006,1.0);
+      osc(ac,'triangle',freq*2,t+delay,1.0,0.04,0.006,0.8);
+      const o=ac.createOscillator(),g=ac.createGain();
+      o.type='sine'; o.frequency.value=freq*3.0;
+      g.gain.setValueAtTime(0,t+delay);
+      g.gain.linearRampToValueAtTime(0.025,t+delay+0.006);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+delay+0.9);
+      o.connect(g); g.connect(rev);
+      o.start(t+delay); o.stop(t+delay+1.0);
+    });
+    // Final sustained chord
+    [523.25,659.25,783.99].forEach((freq,i)=>{
+      osc(ac,'sine',freq,t+0.72,2.2,0.07,0.04,1.8);
+    });
+  };
+
+  // ── Mute toggle ──────────────────────────────────────
+  btn.addEventListener('click',()=>{
+    unlock();
+    muted=!muted;
+    btn.textContent=muted?'🔕':'🔔';
+    btn.classList.toggle('muted',muted);
+    if(!muted) playMinuteChime(); // confirmation chime on unmute
+  });
+
+  // Unlock on any touch/click on the page
+  ['touchstart','mousedown','keydown'].forEach(ev=>{
+    document.addEventListener(ev,unlock,{once:true,passive:true});
+  });
+
+  // ── Hook into countdown tick ──────────────────────────
+  // Patch the global tick to fire sounds
+  const _origTick=window._tickSoundHook=()=>{
+    if(muted||!unlocked) return;
+    const ms=TARGET-Date.now();
+    if(ms<=0){ window.playArrivalFanfare(); return; }
+    const ts=Math.floor(ms/1000);
+    const secs=ts%60;
+    const mins=Math.floor(ts/60)%60;
+    const hrs=Math.floor(ts/3600)%24;
+    const days=Math.floor(ms/86400000);
+
+    // Tick every second
+    playTick();
+
+    // Minute rollover
+    if(mins!==prevMin && prevMin!==-1){
+      if(hrs===0 && mins===0) playHourBell();
+      else playMinuteChime();
+    }
+    prevMin=mins;
+
+    // Day rollover
+    if(days!==prevDay && prevDay!==-1) playHourBell();
+    prevDay=days;
+  };
+
+  // Wrap the existing setInterval tick
+  const _origSetInterval=window.setInterval;
+  // Instead, patch by overriding the global tick reference
+  // We re-declare tick to include sound
+  const _baseTick=window.tick; // won't exist as global; use delegation below
+})();
+
+// Patch tick() to also fire sounds after it runs
+(()=>{
+  const origTick=tick;
+  window.tick=function(){
+    origTick();
+    if(window._tickSoundHook) window._tickSoundHook();
+  };
+  // Restart interval with patched tick
+  clearInterval(window._tickInterval);
+  window._tickInterval=setInterval(window.tick,1000);
+})();
+
 </script>
 </body>
 </html>
